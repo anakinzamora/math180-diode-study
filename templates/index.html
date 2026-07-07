@@ -59,8 +59,14 @@
             gap: 1.5rem;
         }
 
+        /* Tablet and below: charts stack to a single column */
+        @media (max-width: 1024px) {
+            .grid-charts { grid-template-columns: 1fr; }
+        }
+
+        /* Mobile: everything single column, full width */
         @media (max-width: 768px) {
-            .grid-2, .grid-3, .grid-charts { grid-template-columns: 1fr; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
         }
 
         .info-card p { font-size: 0.92rem; color: #444; }
@@ -192,6 +198,11 @@
             text-align: center;
             color: #1a1a2e;
         }
+        .chart-canvas-wrap {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
         .chart-note {
             font-size: 0.82rem;
             color: #777;
@@ -200,11 +211,17 @@
             font-style: italic;
         }
 
+        .anova-wrap {
+            overflow-x: auto;
+            border-radius: 8px;
+        }
         .anova-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.88rem;
         }
+        /* Short ANOVA headers hidden by default (shown on mobile) */
+        .th-short { display: none; }
         .anova-table th {
             background: #1a1a2e;
             color: #fff;
@@ -337,6 +354,63 @@
             background: #7F77DD;
             color: #fff;
         }
+
+        /* ===== Responsive: tablet ===== */
+        @media (max-width: 1024px) {
+            .chart-canvas-wrap { height: 280px; }
+        }
+
+        /* ===== Responsive: mobile (<768px) ===== */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 1rem 1.25rem;
+            }
+            .header-title { font-size: 1.1rem; }
+            .header-subtitle { font-size: 0.78rem; }
+
+            .container { padding: 1rem; }
+            .card { padding: 1.1rem; }
+
+            /* Chips: keep in a row, larger tap targets */
+            .chip-group { flex-wrap: nowrap; }
+            .chip {
+                min-height: 44px;
+                min-width: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 1;
+            }
+
+            /* Charts shorter on phones */
+            .chart-canvas-wrap { height: 220px; }
+
+            /* Tables: shrink text, scroll horizontally */
+            .raw-data-table { font-size: 11px; }
+            .raw-data-table th,
+            .raw-data-table td { padding: 0.5rem; }
+            .replicate-values span { font-size: 10px; }
+            .cell-mean { font-size: 11px; }
+
+            .anova-table { font-size: 0.8rem; }
+            .anova-table th,
+            .anova-table td { padding: 0.5rem 0.5rem; white-space: nowrap; }
+
+            /* Swap full ANOVA headers for abbreviations */
+            .th-full { display: none; }
+            .th-short { display: inline; }
+
+            /* Export buttons stack full width */
+            .export-row { flex-direction: column; }
+        }
+
+        /* Extra-small phones (iPhone SE ~375px) */
+        @media (max-width: 400px) {
+            .header-title { font-size: 1rem; }
+            .chip { padding: 0.45rem 0.6rem; }
+        }
     </style>
 </head>
 <body>
@@ -423,11 +497,11 @@
         <div class="grid-charts">
             <div class="chart-card">
                 <h3>Mean Leakage Current by Doping &amp; Temperature</h3>
-                <canvas id="barChart"></canvas>
+                <div class="chart-canvas-wrap"><canvas id="barChart"></canvas></div>
             </div>
             <div class="chart-card">
                 <h3>Interaction Plot: Doping × Temperature</h3>
-                <canvas id="lineChart"></canvas>
+                <div class="chart-canvas-wrap"><canvas id="lineChart"></canvas></div>
             </div>
         </div>
         <p class="chart-note">Parallel lines = no interaction. Crossing lines = significant interaction.</p>
@@ -435,19 +509,21 @@
 
     <section class="results-section card" id="section-anova">
         <h2>Two-Way ANOVA Table (α = 0.05)</h2>
-        <table class="anova-table">
-            <thead>
-                <tr>
-                    <th>Source of Variation</th>
-                    <th>Sum of Squares</th>
-                    <th>df</th>
-                    <th>F-statistic</th>
-                    <th>p-value</th>
-                    <th>Decision</th>
-                </tr>
-            </thead>
-            <tbody id="anova-body"></tbody>
-        </table>
+        <div class="anova-wrap">
+            <table class="anova-table">
+                <thead>
+                    <tr>
+                        <th><span class="th-full">Source of Variation</span><span class="th-short">Source</span></th>
+                        <th><span class="th-full">Sum of Squares</span><span class="th-short">SS</span></th>
+                        <th>df</th>
+                        <th><span class="th-full">F-statistic</span><span class="th-short">F</span></th>
+                        <th><span class="th-full">p-value</span><span class="th-short">p</span></th>
+                        <th><span class="th-full">Decision</span><span class="th-short">Result</span></th>
+                    </tr>
+                </thead>
+                <tbody id="anova-body"></tbody>
+            </table>
+        </div>
         <div class="interpretation" id="interpretation"></div>
     </section>
 
@@ -627,6 +703,7 @@
             data: { labels: DOPING_ORDER, datasets },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { title: { display: true, text: 'Junction Temperature' } }
                 },
@@ -659,6 +736,7 @@
             data: { labels: TEMP_ORDER, datasets },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { title: { display: true, text: 'Doping Concentration' } }
                 },

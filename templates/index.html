@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATH180 Diode Leakage Current Study</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            color: #1a1a2e;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title { font-size: 1.35rem; font-weight: 700; }
+        .header-subtitle { color: #aaa; font-size: 0.85rem; margin-top: 0.2rem; }
+        .badge {
+            background: #7F77DD;
+            color: #fff;
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #1a1a2e;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .grid-charts { grid-template-columns: 1fr; }
+        }
+
+        .info-card p { font-size: 0.92rem; color: #444; }
+        .info-card ul { list-style: none; font-size: 0.92rem; color: #444; }
+        .info-card li { margin-bottom: 0.35rem; }
+        .info-card li strong { color: #1a1a2e; }
+
+        .chip-group { display: flex; gap: 0.5rem; margin: 0.75rem 0 1.25rem; }
+        .chip {
+            padding: 0.45rem 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 999px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .chip.active {
+            border-color: #7F77DD;
+            background: #7F77DD;
+            color: #fff;
+        }
+
+        .btn-run {
+            width: 100%;
+            padding: 0.9rem;
+            background: #1a1a2e;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-run:hover { background: #2d2d4a; }
+        .btn-run:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-export {
+            flex: 1;
+            padding: 0.75rem;
+            background: #fff;
+            border: 2px solid #7F77DD;
+            color: #7F77DD;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+        }
+        .btn-export:hover { background: #7F77DD; color: #fff; }
+
+        .export-row { display: flex; gap: 1rem; }
+
+        .loading { display: none; margin-top: 1rem; }
+        .loading.visible { display: block; }
+        .loading-text { font-size: 0.9rem; color: #666; margin-bottom: 0.4rem; }
+        .loading-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .loading-bar-fill {
+            height: 100%;
+            width: 30%;
+            background: #7F77DD;
+            border-radius: 999px;
+            animation: loading 1.2s ease-in-out infinite;
+        }
+        @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+        }
+
+        .results-section { display: none; }
+        .results-section.visible { display: block; }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .metric-header {
+            padding: 0.6rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .metric-header.green { background: #2ecc71; }
+        .metric-header.purple { background: #7F77DD; }
+        .metric-header.gray { background: #888; }
+        .metric-value {
+            padding: 1.25rem 1rem;
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            color: #1a1a2e;
+        }
+
+        .grid-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .chart-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .chart-card h3 {
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+            text-align: center;
+            color: #1a1a2e;
+        }
+        .chart-note {
+            font-size: 0.82rem;
+            color: #777;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+
+        .anova-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .anova-table th {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 0.65rem 0.75rem;
+            text-align: left;
+        }
+        .anova-table td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+        .anova-table tr:nth-child(even) td { background: #fafafa; }
+        .decision-significant {
+            background: #d4edda !important;
+            color: #155724;
+            font-weight: 600;
+        }
+        .decision-not-significant {
+            background: #e9ecef !important;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .interpretation {
+            margin-top: 1.25rem;
+            padding: 1rem 1.25rem;
+            background: rgba(127, 119, 221, 0.12);
+            border-left: 4px solid #7F77DD;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.92rem;
+            color: #333;
+        }
+
+        .section-subtitle {
+            font-size: 0.88rem;
+            color: #666;
+            margin-top: -0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .raw-table-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
+        }
+
+        .raw-data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            font-size: 0.88rem;
+        }
+
+        .raw-data-table th,
+        .raw-data-table td {
+            border: 1px solid #e0e0e0;
+            padding: 0.75rem;
+            vertical-align: top;
+        }
+
+        .raw-data-table thead th {
+            background: #1a1a2e;
+            color: #fff;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .raw-data-table thead th:first-child {
+            text-align: left;
+        }
+
+        .raw-data-table tbody th {
+            background: #1a1a2e;
+            color: #fff;
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .raw-data-table tbody td {
+            background: #fff;
+            text-align: center;
+        }
+
+        .raw-data-table tbody tr.row-alt td {
+            background: #f5f5f5;
+        }
+
+        .replicate-values {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            align-items: center;
+        }
+
+        .replicate-values span {
+            color: #888;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        .cell-mean {
+            margin-top: 0.5rem;
+            font-size: 13px;
+            font-weight: 700;
+            color: #7F77DD;
+        }
+
+        .raw-table-note {
+            font-size: 0.82rem;
+            color: #777;
+            font-style: italic;
+            margin-top: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-download-raw {
+            display: inline-block;
+            padding: 0.65rem 1.25rem;
+            background: #fff;
+            border: 2px solid #7F77DD;
+            color: #7F77DD;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+        }
+        .btn-download-raw:hover {
+            background: #7F77DD;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div>
+        <div class="header-title">Semiconductor Diode Leakage Current Study</div>
+        <div class="header-subtitle">MATH180 · Factorial Design · Mapua University</div>
+    </div>
+    <span class="badge">Two-Way ANOVA</span>
+</header>
+
+<div class="container">
+
+    <section class="grid-2" style="margin-bottom: 1.5rem;">
+        <div class="card info-card">
+            <h2>About this study</h2>
+            <p>This simulation models leakage current (I₀) in a silicon p-n junction diode using the Shockley diode equation: I₀ = A·T²·e<sup>−Eg/kT</sup>. Two factors are varied: doping concentration and junction temperature. A two-way factorial ANOVA determines which factor significantly affects leakage current.</p>
+        </div>
+        <div class="card info-card">
+            <h2>Experiment parameters</h2>
+            <ul>
+                <li><strong>Factor A:</strong> Doping Concentration — Low (1×10¹⁵), Medium (1×10¹⁷), High (1×10¹⁹) cm⁻³</li>
+                <li><strong>Factor B:</strong> Temperature — 27°C, 50°C, 75°C</li>
+                <li><strong>Design:</strong> 3×3 factorial · 5 replicates · 45 trials</li>
+                <li><strong>Significance level:</strong> α = 0.05</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Run Simulation</h2>
+        <label for="chip-group">Number of replicates per cell:</label>
+        <div class="chip-group" id="chip-group">
+            <button class="chip" data-seeds="3">3</button>
+            <button class="chip active" data-seeds="5">5</button>
+            <button class="chip" data-seeds="10">10</button>
+        </div>
+        <button class="btn-run" id="run-btn">Run Simulation (45 trials)</button>
+        <div class="loading" id="loading">
+            <div class="loading-text">Running simulation...</div>
+            <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+        </div>
+    </section>
+
+    <section class="results-section" id="section-summary">
+        <div class="grid-3">
+            <div class="metric-card">
+                <div class="metric-header green">Best combination</div>
+                <div class="metric-value" id="metric-best">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header purple">Overall mean (nA)</div>
+                <div class="metric-value" id="metric-mean">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header gray">Total trials</div>
+                <div class="metric-value" id="metric-trials">—</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="results-section card" id="section-raw-data">
+        <h2 id="raw-data-title">Raw Data Table (45 Trials)</h2>
+        <p class="section-subtitle" id="raw-data-subtitle">Leakage Current (nA) per cell — 5 replicates per combination</p>
+        <div class="raw-table-wrap">
+            <table class="raw-data-table">
+                <thead>
+                    <tr>
+                        <th>Doping \ Temp</th>
+                        <th>27°C</th>
+                        <th>50°C</th>
+                        <th>75°C</th>
+                    </tr>
+                </thead>
+                <tbody id="raw-data-body"></tbody>
+            </table>
+        </div>
+        <p class="raw-table-note" id="raw-table-note">Values shown in nanoamperes (nA). Each cell contains 5 replicates generated using the Shockley diode equation with 5% Gaussian noise.</p>
+        <button class="btn-download-raw" id="download-raw-btn" type="button">Download Raw Data Table</button>
+    </section>
+
+    <section class="results-section" id="section-charts">
+        <div class="grid-charts">
+            <div class="chart-card">
+                <h3>Mean Leakage Current by Doping &amp; Temperature</h3>
+                <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Interaction Plot: Doping × Temperature</h3>
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+        <p class="chart-note">Parallel lines = no interaction. Crossing lines = significant interaction.</p>
+    </section>
+
+    <section class="results-section card" id="section-anova">
+        <h2>Two-Way ANOVA Table (α = 0.05)</h2>
+        <table class="anova-table">
+            <thead>
+                <tr>
+                    <th>Source of Variation</th>
+                    <th>Sum of Squares</th>
+                    <th>df</th>
+                    <th>F-statistic</th>
+                    <th>p-value</th>
+                    <th>Decision</th>
+                </tr>
+            </thead>
+            <tbody id="anova-body"></tbody>
+        </table>
+        <div class="interpretation" id="interpretation"></div>
+    </section>
+
+    <section class="card">
+        <h2>Export</h2>
+        <div class="export-row">
+            <a class="btn-export" href="/download-results">Download results.csv</a>
+            <a class="btn-export" href="/download-anova">Download ANOVA table</a>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    const DOPING_ORDER = ['Low', 'Medium', 'High'];
+    const TEMP_ORDER = ['27C', '50C', '75C'];
+    const TEMP_COLORS = ['#4682b4', '#ff7f50', '#3cb371'];
+    const DOPING_COLORS = ['#4682b4', '#ff7f50', '#3cb371'];
+
+    const SOURCE_DISPLAY = {
+        doping_label: 'Factor A (Doping)',
+        temp_label: 'Factor B (Temperature)',
+        interaction: 'Interaction (A×B)',
+        Residual: 'Error'
+    };
+
+    const SOURCE_ORDER = ['doping_label', 'temp_label', 'interaction', 'Residual'];
+
+    const DOPING_LABELS = {
+        Low: 'Low (1×10¹⁵)',
+        Medium: 'Medium (1×10¹⁷)',
+        High: 'High (1×10¹⁹)',
+    };
+
+    const TEMP_DISPLAY = {
+        '27C': '27°C',
+        '50C': '50°C',
+        '75C': '75°C',
+    };
+
+    let nSeeds = 5;
+    let barChartInstance = null;
+    let lineChartInstance = null;
+    let lastRawResults = [];
+
+    function updateReplicateNotes(replicateCount) {
+        const reps = replicateCount ?? nSeeds;
+        document.getElementById('raw-data-subtitle').textContent =
+            `Leakage Current (nA) per cell — ${reps} replicates per combination`;
+        document.getElementById('raw-table-note').textContent =
+            `Values shown in nanoamperes (nA). Each cell contains ${reps} replicates generated using the Shockley diode equation with 5% Gaussian noise.`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => updateReplicateNotes());
+
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            nSeeds = parseInt(chip.dataset.seeds, 10);
+            document.getElementById('run-btn').textContent =
+                `Run Simulation (${9 * nSeeds} trials)`;
+            document.getElementById('raw-data-title').textContent =
+                `Raw Data Table (${9 * nSeeds} Trials)`;
+            updateReplicateNotes();
+        });
+    });
+
+    function formatReplicate(val) {
+        if (Math.abs(val) < 0.0001 || Math.abs(val) >= 10000) return val.toExponential(4);
+        if (val >= 1) return val.toFixed(4);
+        return val.toFixed(6);
+    }
+
+    function getCellResults(results, doping, temp) {
+        return results
+            .filter(r => r.doping_label === doping && r.temp_label === temp)
+            .sort((a, b) => a.replicate - b.replicate)
+            .map(r => r.leakage_nA);
+    }
+
+    function renderRawDataTable(results, groupMeans) {
+        const tbody = document.getElementById('raw-data-body');
+        tbody.innerHTML = '';
+
+        DOPING_ORDER.forEach((doping, rowIdx) => {
+            const tr = document.createElement('tr');
+            if (rowIdx === 1) tr.classList.add('row-alt');
+
+            let rowHtml = `<th>${DOPING_LABELS[doping]}</th>`;
+
+            TEMP_ORDER.forEach(temp => {
+                const values = getCellResults(results, doping, temp);
+                const meanRow = groupMeans.find(
+                    g => g.doping_label === doping && g.temp_label === temp
+                );
+                const mean = meanRow ? meanRow.mean_leakage_nA : 0;
+
+                const replicatesHtml = values
+                    .map(v => `<span>${formatReplicate(v)}</span>`)
+                    .join('');
+
+                rowHtml += `
+                    <td>
+                        <div class="replicate-values">${replicatesHtml}</div>
+                        <div class="cell-mean">Mean: ${formatReplicate(mean)}</div>
+                    </td>
+                `;
+            });
+
+            tr.innerHTML = rowHtml;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function buildRawDataCsv(results, groupMeans) {
+        const headers = ['Doping \\ Temperature', ...TEMP_ORDER.map(t => TEMP_DISPLAY[t])];
+        const rows = [headers.join(',')];
+
+        DOPING_ORDER.forEach(doping => {
+            const cells = TEMP_ORDER.map(temp => {
+                const values = getCellResults(results, doping, temp);
+                const meanRow = groupMeans.find(
+                    g => g.doping_label === doping && g.temp_label === temp
+                );
+                const mean = meanRow ? meanRow.mean_leakage_nA : 0;
+                const repStr = values.map(v => formatReplicate(v)).join(', ');
+                return `"${repStr} | Mean: ${formatReplicate(mean)}"`;
+            });
+            rows.push(`"${DOPING_LABELS[doping]}",${cells.join(',')}`);
+        });
+
+        return rows.join('\n');
+    }
+
+    function downloadRawDataCsv() {
+        if (!lastRawResults.length) return;
+        const csv = buildRawDataCsv(lastRawResults, lastGroupMeans);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'raw_data_table.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    let lastGroupMeans = [];
+
+    function formatNum(val, decimals = 6) {
+        if (val === null || val === undefined) return '—';
+        if (Math.abs(val) < 0.0001 || Math.abs(val) >= 10000) return val.toExponential(4);
+        return val.toFixed(decimals);
+    }
+
+    function getMean(groupMeans, doping, temp) {
+        const row = groupMeans.find(
+            g => g.doping_label === doping && g.temp_label === temp
+        );
+        return row ? row.mean_leakage_nA : 0;
+    }
+
+    function renderBarChart(groupMeans) {
+        const ctx = document.getElementById('barChart').getContext('2d');
+        if (barChartInstance) barChartInstance.destroy();
+
+        const datasets = TEMP_ORDER.map((temp, i) => ({
+            label: temp,
+            data: DOPING_ORDER.map(d => getMean(groupMeans, d, temp)),
+            backgroundColor: TEMP_COLORS[i],
+            borderColor: TEMP_COLORS[i],
+            borderWidth: 1
+        }));
+
+        barChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: DOPING_ORDER, datasets },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { title: { display: true, text: 'Junction Temperature' } }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Doping Concentration Level' } },
+                    y: {
+                        type: 'logarithmic',
+                        title: { display: true, text: 'Mean Leakage Current (nA)' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderLineChart(groupMeans) {
+        const ctx = document.getElementById('lineChart').getContext('2d');
+        if (lineChartInstance) lineChartInstance.destroy();
+
+        const datasets = DOPING_ORDER.map((doping, i) => ({
+            label: doping,
+            data: TEMP_ORDER.map(t => getMean(groupMeans, doping, t)),
+            borderColor: DOPING_COLORS[i],
+            backgroundColor: DOPING_COLORS[i],
+            pointRadius: 5,
+            tension: 0.1
+        }));
+
+        lineChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: TEMP_ORDER, datasets },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { title: { display: true, text: 'Doping Concentration' } }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Junction Temperature' } },
+                    y: {
+                        type: 'logarithmic',
+                        title: { display: true, text: 'Mean Leakage Current (nA)' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderAnovaTable(anovaRows) {
+        const tbody = document.getElementById('anova-body');
+        tbody.innerHTML = '';
+
+        const sorted = SOURCE_ORDER.map(key =>
+            anovaRows.find(r => r.source === key)
+        ).filter(Boolean);
+
+        sorted.forEach(row => {
+            const isError = row.source === 'Residual';
+            const significant = row.significant;
+            const decisionText = isError ? '—' :
+                (significant ? 'Significant ✓' : 'Not Significant');
+            const decisionClass = isError ? '' :
+                (significant ? 'decision-significant' : 'decision-not-significant');
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${SOURCE_DISPLAY[row.source] || row.source}</td>
+                <td>${formatNum(row.ss, 4)}</td>
+                <td>${row.df}</td>
+                <td>${row.f_stat !== null ? formatNum(row.f_stat, 4) : '—'}</td>
+                <td>${row.p_value !== null ? formatNum(row.p_value, 6) : '—'}</td>
+                <td class="${decisionClass}">${decisionText}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function generateInterpretation(anovaRows, summary) {
+        const factors = {
+            doping_label: 'doping concentration (Factor A)',
+            temp_label: 'junction temperature (Factor B)',
+            interaction: 'the interaction between doping and temperature (A×B)'
+        };
+
+        const significant = anovaRows.filter(r => r.significant && r.source !== 'Residual');
+        const interactionRow = anovaRows.find(r => r.source === 'interaction');
+        const hasInteraction = interactionRow && interactionRow.significant;
+
+        let text = '';
+
+        if (significant.length === 0) {
+            text = 'At α = 0.05, neither doping concentration nor junction temperature showed a statistically significant effect on leakage current. ';
+        } else {
+            const names = significant.map(r => factors[r.source]).join(' and ');
+            text = `At α = 0.05, ${names} ${significant.length > 1 ? 'were' : 'was'} statistically significant (p < 0.05). `;
+        }
+
+        if (hasInteraction) {
+            text += 'A significant interaction effect was detected, meaning the effect of one factor depends on the level of the other. ';
+        } else {
+            text += 'No significant interaction was found — the effect of each factor appears independent of the other (parallel lines in the interaction plot). ';
+        }
+
+        const best = summary.best_combination;
+        text += `The best-performing combination was ${best.doping_label} doping at ${best.temp_label} `;
+        text += `(mean leakage = ${formatNum(summary.best_accuracy, 6)} nA). `;
+        text += `Overall mean leakage across all ${summary.total_trials} trials was ${formatNum(summary.overall_mean, 6)} nA.`;
+
+        document.getElementById('interpretation').textContent = text;
+    }
+
+    function showResults(data) {
+        const best = data.summary.best_combination;
+        document.getElementById('metric-best').textContent =
+            `${best.doping_label} · ${best.temp_label}`;
+        document.getElementById('metric-mean').textContent =
+            formatNum(data.summary.overall_mean, 6);
+        document.getElementById('metric-trials').textContent =
+            data.summary.total_trials;
+
+        lastRawResults = data.results;
+        lastGroupMeans = data.group_means;
+
+        document.getElementById('raw-data-title').textContent =
+            `Raw Data Table (${data.summary.total_trials} Trials)`;
+        updateReplicateNotes(data.summary.total_trials / 9);
+
+        renderRawDataTable(data.results, data.group_means);
+        renderBarChart(data.group_means);
+        renderLineChart(data.group_means);
+        renderAnovaTable(data.anova_table);
+        generateInterpretation(data.anova_table, data.summary);
+
+        ['section-summary', 'section-raw-data', 'section-charts', 'section-anova'].forEach(id => {
+            document.getElementById(id).classList.add('visible');
+        });
+    }
+
+    async function runSimulation() {
+        const runBtn = document.getElementById('run-btn');
+        const loading = document.getElementById('loading');
+
+        runBtn.disabled = true;
+        loading.classList.add('visible');
+
+        try {
+            const response = await fetch('/run-simulation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ n_seeds: nSeeds })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}. Is Flask running at 127.0.0.1?`);
+            }
+
+            const data = await response.json();
+            showResults(data);
+        } catch (err) {
+            alert(
+                'Simulation failed — the Flask server is not reachable.\n\n' +
+                'Fix: open a terminal in the project folder and run:\n' +
+                '  python3 launch.py\n\n' +
+                'Then open the URL shown in the terminal (use 127.0.0.1, not localhost).'
+            );
+            console.error(err);
+        } finally {
+            loading.classList.remove('visible');
+            runBtn.disabled = false;
+        }
+    }
+
+    document.getElementById('run-btn').addEventListener('click', runSimulation);
+    document.getElementById('download-raw-btn').addEventListener('click', downloadRawDataCsv);
+</script>
+
+</body>
+</html>

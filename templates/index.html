@@ -778,18 +778,13 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Server returned ${response.status}. Is Flask running at 127.0.0.1?`);
+                throw new Error(`Server returned ${response.status}.`);
             }
 
             const data = await response.json();
             showResults(data);
         } catch (err) {
-            alert(
-                'Simulation failed — the Flask server is not reachable.\n\n' +
-                'Fix: open a terminal in the project folder and run:\n' +
-                '  python3 launch.py\n\n' +
-                'Then open the URL shown in the terminal (use 127.0.0.1, not localhost).'
-            );
+            alert('Simulation failed. Please try again in a moment.');
             console.error(err);
         } finally {
             loading.classList.remove('visible');
